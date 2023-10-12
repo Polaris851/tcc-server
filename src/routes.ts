@@ -135,6 +135,9 @@ export async function appRoutes(app: FastifyInstance) {
                 lt: new Date(2023, currentMonth, 1), // Start of the next month
               },
             },
+            orderBy: {
+                dueDate: 'asc', 
+            },
             select: {
                 id: true,
                 title: true,

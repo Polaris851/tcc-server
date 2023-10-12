@@ -12,6 +12,7 @@ async function run() {
   await prisma.homework.deleteMany()
   await prisma.event.deleteMany()
   await prisma.weekActivity.deleteMany()
+  await prisma.discipline.deleteMany()
 
   /**
    * Create Homeworks
@@ -100,6 +101,32 @@ async function run() {
         }
       }),
     ])
+
+    /**
+   * Create Discipline
+   */
+      await Promise.all([
+        prisma.discipline.create({
+          data: {
+            discipline: 'matemática',
+            field: 'matemática',
+          }
+        }),
+  
+        prisma.discipline.create({
+          data: {
+            discipline: 'história',
+            field: 'humanas',
+          }
+        }),
+  
+        prisma.discipline.create({
+          data: {
+            discipline: 'biologia',
+            field: 'naturezas',
+          }
+        }),
+      ])
 }
 
 run()
