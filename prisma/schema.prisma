@@ -1,8 +1,9 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
 }
 
 datasource db {
@@ -11,9 +12,37 @@ datasource db {
 }
 
 model Homework {
-  id          String @id @default(uuid())
-  title       String
-  created_at  DateTime
+  id         String   @id @default(uuid())
+  title      String
+  created_at DateTime
+  completed  Boolean
 
   @@map("homeworks")
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  discipline  String
+  dueDate     DateTime
+  alertDate   DateTime?
+  description String?
+
+  @@map("events")
+}
+
+model WeekActivity {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  @@map("week_activities")
+}
+
+model Discipline {
+  id         String      @id @default(uuid())
+  discipline String
+  field      String
+
+  @@map("disciplines")
 }
