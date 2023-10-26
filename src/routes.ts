@@ -2,7 +2,6 @@ import { FastifyInstance } from "fastify"
 import { z } from "zod"
 import { prisma } from "./lib/prisma"
 import dayjs from "dayjs"
-import { Homework } from "@prisma/client"
 
 export async function appRoutes(app: FastifyInstance) {
     // Create daily homeworks
@@ -71,7 +70,7 @@ export async function appRoutes(app: FastifyInstance) {
     app.post("/disciplines", async (request) => {
         const createdDisciplineBody = z.object({
             discipline: z.string(),
-            field: z.string(),
+            field: z.enum(["Matematica", "Naturezas", "Humanas", "Linguagens", "Tecnico"]),
         });
         
         const { discipline, field } = createdDisciplineBody.parse(request.body)
@@ -158,9 +157,16 @@ export async function appRoutes(app: FastifyInstance) {
 
     // Get all student's subjects
     app.get("/discipline", async () => {
-        const disciplines = await prisma.discipline.findMany()
+        const disciplines = await prisma.discipline.findMany({
+            select: {
+                id: true,
+                discipline: true,
+                field: true,
+            },
+            distinct: ['discipline']
+        })
 
-        return disciplines
+        return  disciplines
     })
 
     // Completar / não completar a tarefa
@@ -208,14 +214,89 @@ export async function appRoutes(app: FastifyInstance) {
             }
         })
 
-        const groupedByDay: { [index: number]: Partial<Homework>[] } = {};
+        const groupedByDay: { [index: string]: { date: string; completed: number; amount: number } } = {}
 
         homeworks.forEach((homework) => {
-            const monthDay = homework.created_at.getDate();
-            if (!groupedByDay[monthDay]) groupedByDay[monthDay] = [];
-            groupedByDay[monthDay].push(homework);
+          const dayKey = homework.created_at.toISOString().split('T')[0]
+          
+          if (!groupedByDay[dayKey]) {
+            groupedByDay[dayKey] = {
+              date: dayKey,
+              completed: 0,
+              amount: 0
+            }
+          }
+        
+          if (homework.completed) {
+            groupedByDay[dayKey].completed++
+          }
+          groupedByDay[dayKey].amount++
         });
+        
+        return Object.values(groupedByDay)
+    })
 
-        return groupedByDay;
+    app.delete("/homeworks/:id", async (request) => {
+        const deleteHomeworkParams = z.object({
+            id: z.string().uuid(),
+        })
+
+        const { id } = deleteHomeworkParams.parse(request.params)
+
+        await prisma.homework.delete({
+            where: {
+                id: id
+            }
+        })
+    })
+
+    app.delete("/weeklyactivities/:id", async (request) => {
+        const deleteWeeklyActivitiesParams = z.object({
+            id: z.string().uuid(),
+        })
+
+        const { id } =deleteWeeklyActivitiesParams.parse(request.params)
+
+        await prisma.weekActivity.delete({
+            where: {
+                id: id
+            }
+        })
+    })
+
+    app.delete("/monthlyevents/:id", async (request) => {
+        const deleteMonthlyEventsParams = z.object({
+            id: z.string().uuid(),
+        })
+
+        const { id } = deleteMonthlyEventsParams.parse(request.params)
+
+        const existingRecord = await prisma.event.findUnique({
+            where: {
+              id: id
+            }
+        });
+          
+        if (existingRecord) {
+            await prisma.event.delete({
+                where: {
+                id: id
+                }
+            })
+        }
+    })
+
+    app.delete("/disciplines/:id", async (request) => {
+        const deleteDisciplinesParams = z.object({
+            id: z.string().uuid(),
+        })
+
+        const { id } = deleteDisciplinesParams.parse(request.params)
+
+        await prisma.discipline.delete({
+            where: {
+                id: id
+            }
+        })
     })
 }

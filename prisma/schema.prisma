@@ -7,7 +7,7 @@ generator erd {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -42,7 +42,15 @@ model WeekActivity {
 model Discipline {
   id         String      @id @default(uuid())
   discipline String
-  field      String
+  field      FieldEnum
 
   @@map("disciplines")
+}
+
+enum FieldEnum {
+  Matematica
+  Naturezas
+  Humanas
+  Linguagens
+  Tecnico
 }

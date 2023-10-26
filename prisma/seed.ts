@@ -109,21 +109,21 @@ async function run() {
         prisma.discipline.create({
           data: {
             discipline: 'matemática',
-            field: 'matemática',
+            field: 'Matematica',
           }
         }),
   
         prisma.discipline.create({
           data: {
             discipline: 'história',
-            field: 'humanas',
+            field: 'Humanas',
           }
         }),
   
         prisma.discipline.create({
           data: {
             discipline: 'biologia',
-            field: 'naturezas',
+            field: 'Naturezas',
           }
         }),
       ])
