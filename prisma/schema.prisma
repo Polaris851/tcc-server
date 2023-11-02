@@ -22,7 +22,7 @@ model Homework {
 
 model Event {
   id          String    @id @default(uuid())
-  title       String
+  title       TitleEnum
   discipline  String
   dueDate     DateTime
   alertDate   DateTime?
@@ -35,16 +35,42 @@ model WeekActivity {
   id          String  @id @default(uuid())
   title       String
   description String?
+  time_week_activity   TimeWeekActivity[]
 
   @@map("week_activities")
+}
+
+model TimeWeekActivity {
+  id                String  @id @default(uuid())
+  dayOfWeek         DayOfWeekEnum
+  startTime         DateTime @db.Time
+  endTime           DateTime @db.Time
+  week_activity_id  String
+
+  weekActivity WeekActivity @relation(fields: [week_activity_id], references: [id])
+
+  @@map("times_week_activities")
 }
 
 model Discipline {
   id         String      @id @default(uuid())
   discipline String
   field      FieldEnum
+  Time_discipline   TimeDiscipline[]
 
   @@map("disciplines")
+}
+
+model TimeDiscipline {
+  id              String  @id @default(uuid())
+  dayOfWeek       DayOfWeekEnum
+  startTime       DateTime @db.Time
+  endTime         DateTime @db.Time
+  discipline_id   String
+
+  Discipline Discipline @relation(fields: [discipline_id], references: [id])
+
+  @@map("times_disciplines")
 }
 
 enum FieldEnum {
@@ -53,4 +79,19 @@ enum FieldEnum {
   Humanas
   Linguagens
   Tecnico
+}
+
+enum TitleEnum {
+  Prova
+  Seminario
+  Trabalho
+  Tarefa
+}
+
+enum DayOfWeekEnum {
+  Segunda
+  Terca
+  Quarta
+  Quinta
+  Sexta
 }

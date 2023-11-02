@@ -28,22 +28,40 @@ export async function appRoutes(app: FastifyInstance) {
         const createdActivityBody = z.object({
             title: z.string(),
             description: z.string().optional(),
+            weekActivityTimes: z.array(z.object({
+                dayOfWeek: z.enum(["Segunda", "Terca", "Quarta", "Quinta", "Sexta"]),
+                startTime: z.string(),
+                endTime: z.string()
+            }))
         });
         
-        const { title, description } = createdActivityBody.parse(request.body)
+        const { title, description, weekActivityTimes } = createdActivityBody.parse(request.body)
         
-        await prisma.weekActivity.create({
+        const weekActivitiyEntity = await prisma.weekActivity.create({
             data: {
                 title,
                 description,
             },
         })
+
+        if (weekActivitiyEntity && "id" in weekActivitiyEntity) {
+            const formattedWeekActivityTimes = weekActivityTimes.map((weekActivityTime) => ({
+                ...weekActivityTime,
+                startTime: hoursAndMinutesToDate(weekActivityTime.startTime),
+                endTime: hoursAndMinutesToDate(weekActivityTime.endTime),
+                week_activity_id: weekActivitiyEntity.id
+            }))
+            
+            await prisma.timeWeekActivity.createMany({
+                data: formattedWeekActivityTimes
+            })
+        }
     })
 
     // Create monthly events
     app.post("/monthlyevents", async (request) => {
         const createdEventBody = z.object({
-            title: z.string(),
+            title: z.enum(["Prova", "Seminario", "Trabalho", "Tarefa"]),
             discipline: z.string(),
             dueDate: z.string(),
             alertDate: z.string().optional(),
@@ -66,21 +84,52 @@ export async function appRoutes(app: FastifyInstance) {
         });
     });
       
+    const hoursAndMinutesToDate = (time: string) => {
+        const [hours, minutes] = time.split(":")
+        
+        const timestamp = new Date()
+        if (hours && minutes) {
+            timestamp.setHours(parseInt(hours))
+            timestamp.setMinutes(parseInt(minutes))
+        }
+
+        return timestamp
+    }
+
     // Create disciplines
     app.post("/disciplines", async (request) => {
         const createdDisciplineBody = z.object({
             discipline: z.string(),
             field: z.enum(["Matematica", "Naturezas", "Humanas", "Linguagens", "Tecnico"]),
+            disciplineTimes: z.array(z.object({
+                dayOfWeek: z.enum(["Segunda", "Terca", "Quarta", "Quinta", "Sexta"]),
+                startTime: z.string(),
+                endTime: z.string()
+            }))
         });
-        
-        const { discipline, field } = createdDisciplineBody.parse(request.body)
-        
-        await prisma.discipline.create({
+
+        const { discipline, field, disciplineTimes } = createdDisciplineBody.parse(request.body)
+
+        const disciplineEntity = await prisma.discipline.create({
             data: {
                 discipline,
                 field,
             },
         })
+        
+        if (disciplineEntity && "id" in disciplineEntity) {
+            const formattedDisciplineTimes = disciplineTimes.map((disciplineTime) => ({
+                ...disciplineTime,
+                startTime: hoursAndMinutesToDate(disciplineTime.startTime),
+                endTime: hoursAndMinutesToDate(disciplineTime.endTime),
+                discipline_id: disciplineEntity.id
+            }))
+            
+            await prisma.timeDiscipline.createMany({
+                data: formattedDisciplineTimes
+            })
+        }
+
     })
 
     // Get all possible and completed tasks of the day
@@ -123,6 +172,37 @@ export async function appRoutes(app: FastifyInstance) {
         }
     })
 
+    app.get("/summary", async () => {
+        const homeworks = await prisma.homework.findMany({
+            select: {
+                id: true,
+                created_at: true,
+                completed: true
+            }
+        })
+
+        const groupedByDay: { [index: string]: { date: string; completed: number; amount: number } } = {}
+
+        homeworks.forEach((homework: any) => {
+          const dayKey = homework.created_at.toISOString().split('T')[0]
+          
+          if (!groupedByDay[dayKey]) {
+            groupedByDay[dayKey] = {
+              date: dayKey,
+              completed: 0,
+              amount: 0
+            }
+          }
+        
+          if (homework.completed) {
+            groupedByDay[dayKey].completed++
+          }
+          groupedByDay[dayKey].amount++
+        });
+        
+        return Object.values(groupedByDay)
+    })
+
     // Get all events for the current month
     app.get("/events", async () => {
         const currentMonth = dayjs().month() + 1;
@@ -148,11 +228,83 @@ export async function appRoutes(app: FastifyInstance) {
         return eventsMonth
     })
 
-    // Trazer todas as atividades da semana
-    app.get("/activities", async () => {
-        const weekActivities = await prisma.weekActivity.findMany()
+    app.get("/week", async () => {
+        const weekActivities = await prisma.weekActivity.findMany({
+            select: {
+                id: true,
+                title: true,
+            }
+        })
 
-        return weekActivities
+        const weekActivityIds = weekActivities.map((activity) => activity.id)
+
+        const weekActivitiesTimes = await prisma.timeWeekActivity.findMany({
+            where: {
+                week_activity_id: {
+                    in: weekActivityIds, 
+                },
+            },
+            select: {
+                dayOfWeek: true,
+                startTime: true,
+                endTime: true,
+                week_activity_id: true,
+            },
+        })
+
+        const weekActivity = weekActivities.map((activity) => {
+            const matchingTimes = weekActivitiesTimes.filter((time) => time.week_activity_id === activity.id);
+            return {
+              id: activity.id,
+              title: activity.title,
+              times: matchingTimes.map((time) => ({
+                dayOfWeek: time.dayOfWeek,
+                startTime: time.startTime,
+                endTime: time.endTime,
+              })),
+            };
+          });
+
+        const disciplines = await prisma.discipline.findMany({
+            select: {
+                id: true,
+                discipline: true,
+            },
+            distinct: ['discipline']
+        })
+
+        const disciplinesIds = disciplines.map((discipline) => discipline.id)
+
+        const disciplinesTimes = await prisma.timeDiscipline.findMany({
+            where: {
+                discipline_id: {
+                    in: disciplinesIds, 
+                },
+            },
+            select: {
+              dayOfWeek: true,
+              startTime: true,
+              endTime: true,
+              discipline_id: true,
+            },
+        })
+
+        const discipline = disciplines.map((discipline) => {
+            const matchingTimes = disciplinesTimes.filter((time) => time.discipline_id === discipline.id);
+            return {
+              id: discipline.id,
+              discipline: discipline.discipline,
+              times: matchingTimes.map((time) => ({
+                dayOfWeek: time.dayOfWeek,
+                startTime: time.startTime,
+                endTime: time.endTime,
+              })),
+            };
+          });
+
+        
+        return { weekActivity, discipline}
+
     })
 
     // Get all student's subjects
@@ -169,7 +321,6 @@ export async function appRoutes(app: FastifyInstance) {
         return  disciplines
     })
 
-    // Completar / não completar a tarefa
     app.patch("/homeworks/:id/toggle", async (request) => {
         const toggleHomeworkParams = z.object({
             id: z.string().uuid(),
@@ -204,38 +355,6 @@ export async function appRoutes(app: FastifyInstance) {
         }
     })
 
-    // Traz todas as informações para o desempenho
-    app.get("/summary", async () => {
-        const homeworks = await prisma.homework.findMany({
-            select: {
-                id: true,
-                created_at: true,
-                completed: true
-            }
-        })
-
-        const groupedByDay: { [index: string]: { date: string; completed: number; amount: number } } = {}
-
-        homeworks.forEach((homework) => {
-          const dayKey = homework.created_at.toISOString().split('T')[0]
-          
-          if (!groupedByDay[dayKey]) {
-            groupedByDay[dayKey] = {
-              date: dayKey,
-              completed: 0,
-              amount: 0
-            }
-          }
-        
-          if (homework.completed) {
-            groupedByDay[dayKey].completed++
-          }
-          groupedByDay[dayKey].amount++
-        });
-        
-        return Object.values(groupedByDay)
-    })
-
     app.delete("/homeworks/:id", async (request) => {
         const deleteHomeworkParams = z.object({
             id: z.string().uuid(),
@@ -250,12 +369,32 @@ export async function appRoutes(app: FastifyInstance) {
         })
     })
 
+    app.delete("/monthlyevents/:id", async (request) => {
+        const deleteMonthlyEventsParams = z.object({
+            id: z.string().uuid(),
+        })
+        
+        const { id } = deleteMonthlyEventsParams.parse(request.params)
+
+        await prisma.event.delete({
+            where: {
+                id: id
+            }
+        })
+    })
+    
     app.delete("/weeklyactivities/:id", async (request) => {
         const deleteWeeklyActivitiesParams = z.object({
             id: z.string().uuid(),
         })
 
-        const { id } =deleteWeeklyActivitiesParams.parse(request.params)
+        const { id } = deleteWeeklyActivitiesParams.parse(request.params)
+
+        await prisma.timeWeekActivity.deleteMany({
+            where: {
+                week_activity_id: id,
+            }
+        })
 
         await prisma.weekActivity.delete({
             where: {
@@ -264,34 +403,18 @@ export async function appRoutes(app: FastifyInstance) {
         })
     })
 
-    app.delete("/monthlyevents/:id", async (request) => {
-        const deleteMonthlyEventsParams = z.object({
-            id: z.string().uuid(),
-        })
-
-        const { id } = deleteMonthlyEventsParams.parse(request.params)
-
-        const existingRecord = await prisma.event.findUnique({
-            where: {
-              id: id
-            }
-        });
-          
-        if (existingRecord) {
-            await prisma.event.delete({
-                where: {
-                id: id
-                }
-            })
-        }
-    })
-
     app.delete("/disciplines/:id", async (request) => {
         const deleteDisciplinesParams = z.object({
             id: z.string().uuid(),
         })
 
         const { id } = deleteDisciplinesParams.parse(request.params)
+
+        await prisma.timeDiscipline.deleteMany({
+            where: {
+                discipline_id: id,
+            }
+        })
 
         await prisma.discipline.delete({
             where: {
