@@ -1,11 +1,72 @@
-import { FastifyInstance } from "fastify"
+import { FastifyInstance, FastifyRequest } from "fastify"
+import { compare, hash } from "bcryptjs"
 import { z } from "zod"
 import { prisma } from "./lib/prisma"
 import dayjs from "dayjs"
+import { sign } from "jsonwebtoken"
+import { AuthMiddlewares } from "./midllewares/auth"
 
 export async function appRoutes(app: FastifyInstance) {
+    app.post("/create", async (request) => {
+        const createdUserBody = z.object({
+            name: z.string(),
+            email: z.string(),
+            password: z.string(),
+            course: z.enum(["Quimica", "Mecatronica", "Redes"]),
+        })
+        
+        const { name, email, password, course } = createdUserBody.parse(request.body)
+        
+        const hashPassword = await hash(password, 8)
+
+        await prisma.student.create({
+            data: {
+                name,
+                email,
+                password: hashPassword,
+                course,
+            }
+        })
+    })
+
+    app.post("/auth", async (request) => {
+        const createdAuthBody = z.object({
+            email: z.string(),
+            password: z.string(),
+        })
+        
+        const { email, password } = createdAuthBody.parse(request.body)
+        
+        const user = await prisma.student.findUnique({
+            where: {
+                email,
+            }
+        })
+
+        if(!user) {
+            return {
+                error: "Student not found"
+            }    
+        }
+
+        const isValuePassword = await compare(password, user.password)
+
+        if(!isValuePassword) {
+            return {
+                error: "Password invalid"
+            }
+        }
+
+        const token = sign({id: user.id}, "teste", {expiresIn: "1d"})
+
+        const { id, name, course } = user
+        
+        return { user: { id, name, email, course }, token}
+    })
+    
     // Create daily homeworks
     app.post("/homeworks", async (request) => {
+        AuthMiddlewares(request)
         const createdHomeworkBody = z.object({
             title: z.string(),
         })
@@ -25,6 +86,8 @@ export async function appRoutes(app: FastifyInstance) {
 
     // Create weekly activities
     app.post("/weeklyactivities", async (request) => {
+        AuthMiddlewares(request)
+
         const createdActivityBody = z.object({
             title: z.string(),
             description: z.string().optional(),
@@ -60,6 +123,8 @@ export async function appRoutes(app: FastifyInstance) {
 
     // Create monthly events
     app.post("/monthlyevents", async (request) => {
+        AuthMiddlewares(request)
+
         const createdEventBody = z.object({
             title: z.enum(["Prova", "Seminario", "Trabalho", "Tarefa"]),
             discipline: z.string(),
@@ -98,6 +163,8 @@ export async function appRoutes(app: FastifyInstance) {
 
     // Create disciplines
     app.post("/disciplines", async (request) => {
+        AuthMiddlewares(request)
+
         const createdDisciplineBody = z.object({
             discipline: z.string(),
             field: z.enum(["Matematica", "Naturezas", "Humanas", "Linguagens", "Tecnico"]),
@@ -134,6 +201,7 @@ export async function appRoutes(app: FastifyInstance) {
 
     // Get all possible and completed tasks of the day
     app.get("/day", async (request) => {
+        AuthMiddlewares(request)
         const getDayParams = z.object({
             date: z.coerce.date(),
         })
@@ -172,7 +240,9 @@ export async function appRoutes(app: FastifyInstance) {
         }
     })
 
-    app.get("/summary", async () => {
+    app.get("/summary", async (request) => {
+        AuthMiddlewares(request)
+
         const homeworks = await prisma.homework.findMany({
             select: {
                 id: true,
@@ -204,7 +274,9 @@ export async function appRoutes(app: FastifyInstance) {
     })
 
     // Get all events for the current month
-    app.get("/events", async () => {
+    app.get("/events", async (request) => {
+        AuthMiddlewares(request)
+
         const currentMonth = dayjs().month() + 1;
 
         const eventsMonth = await prisma.event.findMany({
@@ -228,7 +300,9 @@ export async function appRoutes(app: FastifyInstance) {
         return eventsMonth
     })
 
-    app.get("/week", async () => {
+    app.get("/week", async (request) => {
+        AuthMiddlewares(request)
+
         const weekActivities = await prisma.weekActivity.findMany({
             select: {
                 id: true,
@@ -236,7 +310,7 @@ export async function appRoutes(app: FastifyInstance) {
             }
         })
 
-        const weekActivityIds = weekActivities.map((activity) => activity.id)
+        const weekActivityIds = weekActivities.map((activity: any) => activity.id)
 
         const weekActivitiesTimes = await prisma.timeWeekActivity.findMany({
             where: {
@@ -252,12 +326,12 @@ export async function appRoutes(app: FastifyInstance) {
             },
         })
 
-        const weekActivity = weekActivities.map((activity) => {
-            const matchingTimes = weekActivitiesTimes.filter((time) => time.week_activity_id === activity.id);
+        const weekActivity = weekActivities.map((activity: any) => {
+            const matchingTimes = weekActivitiesTimes.filter((time: any) => time.week_activity_id === activity.id);
             return {
               id: activity.id,
               title: activity.title,
-              times: matchingTimes.map((time) => ({
+              times: matchingTimes.map((time: any) => ({
                 dayOfWeek: time.dayOfWeek,
                 startTime: time.startTime,
                 endTime: time.endTime,
@@ -273,7 +347,7 @@ export async function appRoutes(app: FastifyInstance) {
             distinct: ['discipline']
         })
 
-        const disciplinesIds = disciplines.map((discipline) => discipline.id)
+        const disciplinesIds = disciplines.map((discipline: any) => discipline.id)
 
         const disciplinesTimes = await prisma.timeDiscipline.findMany({
             where: {
@@ -289,12 +363,12 @@ export async function appRoutes(app: FastifyInstance) {
             },
         })
 
-        const discipline = disciplines.map((discipline) => {
-            const matchingTimes = disciplinesTimes.filter((time) => time.discipline_id === discipline.id);
+        const discipline = disciplines.map((discipline: any) => {
+            const matchingTimes = disciplinesTimes.filter((time: any) => time.discipline_id === discipline.id);
             return {
               id: discipline.id,
               discipline: discipline.discipline,
-              times: matchingTimes.map((time) => ({
+              times: matchingTimes.map((time: any) => ({
                 dayOfWeek: time.dayOfWeek,
                 startTime: time.startTime,
                 endTime: time.endTime,
@@ -308,7 +382,9 @@ export async function appRoutes(app: FastifyInstance) {
     })
 
     // Get all student's subjects
-    app.get("/discipline", async () => {
+    app.get("/discipline", async (request) => {
+        AuthMiddlewares(request)
+
         const disciplines = await prisma.discipline.findMany({
             select: {
                 id: true,
@@ -322,6 +398,8 @@ export async function appRoutes(app: FastifyInstance) {
     })
 
     app.patch("/homeworks/:id/toggle", async (request) => {
+        AuthMiddlewares(request)
+
         const toggleHomeworkParams = z.object({
             id: z.string().uuid(),
         })
@@ -356,6 +434,8 @@ export async function appRoutes(app: FastifyInstance) {
     })
 
     app.delete("/homeworks/:id", async (request) => {
+        AuthMiddlewares(request)
+
         const deleteHomeworkParams = z.object({
             id: z.string().uuid(),
         })
@@ -370,6 +450,8 @@ export async function appRoutes(app: FastifyInstance) {
     })
 
     app.delete("/monthlyevents/:id", async (request) => {
+        AuthMiddlewares(request)
+
         const deleteMonthlyEventsParams = z.object({
             id: z.string().uuid(),
         })
@@ -384,6 +466,8 @@ export async function appRoutes(app: FastifyInstance) {
     })
     
     app.delete("/weeklyactivities/:id", async (request) => {
+        AuthMiddlewares(request)
+
         const deleteWeeklyActivitiesParams = z.object({
             id: z.string().uuid(),
         })
@@ -404,6 +488,8 @@ export async function appRoutes(app: FastifyInstance) {
     })
 
     app.delete("/disciplines/:id", async (request) => {
+        AuthMiddlewares(request)
+
         const deleteDisciplinesParams = z.object({
             id: z.string().uuid(),
         })

@@ -56,7 +56,7 @@ model Discipline {
   id         String      @id @default(uuid())
   discipline String
   field      FieldEnum
-  Time_discipline   TimeDiscipline[]
+  time_discipline   TimeDiscipline[]
 
   @@map("disciplines")
 }
@@ -68,9 +68,19 @@ model TimeDiscipline {
   endTime         DateTime @db.Time
   discipline_id   String
 
-  Discipline Discipline @relation(fields: [discipline_id], references: [id])
+  discipline Discipline @relation(fields: [discipline_id], references: [id])
 
   @@map("times_disciplines")
+}
+
+model Student {
+  id              String  @id @default(uuid())
+  name            String
+  course          CourseEnum
+  email           String  @unique
+  password        String
+
+  @@map("students")
 }
 
 enum FieldEnum {
@@ -94,4 +104,10 @@ enum DayOfWeekEnum {
   Quarta
   Quinta
   Sexta
+}
+
+enum CourseEnum {
+  Quimica
+  Mecatronica
+  Redes
 }
