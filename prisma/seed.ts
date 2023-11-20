@@ -26,6 +26,7 @@ async function run() {
         title: 'Estudar matemática',
         created_at: firstHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -34,6 +35,7 @@ async function run() {
         title: 'Estudar química',
         created_at: firstHomeworkCreationDate,
         completed: false,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -42,6 +44,7 @@ async function run() {
         title: 'Estudar Biologia',
         created_at: secondHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -50,6 +53,7 @@ async function run() {
         title: 'Pesquisa de Biologia',
         created_at: secondHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -58,6 +62,7 @@ async function run() {
         title: 'Estudar Geografia',
         created_at: secondHomeworkCreationDate,
         completed: false,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -67,6 +72,7 @@ async function run() {
         title: 'Pesquisa de Geografia',
         created_at: thirdHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -75,6 +81,7 @@ async function run() {
         title: 'Pesquisa de Matematica',
         created_at: fourthHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -83,6 +90,7 @@ async function run() {
         title: 'Pesquisa de História',
         created_at: fourthHomeworkCreationDate,
         completed: false,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -91,6 +99,7 @@ async function run() {
         title: 'Tarefa de Geografia',
         created_at: fifthHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -99,6 +108,7 @@ async function run() {
         title: 'Pesquisa de Sociologia',
         created_at: fifthHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -107,6 +117,7 @@ async function run() {
         title: 'Pesquisa de Português',
         created_at: fifthHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -115,6 +126,7 @@ async function run() {
         title: 'Pesquisa de Inglês',
         created_at: fifthHomeworkCreationDate,
         completed: false,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -123,6 +135,7 @@ async function run() {
         title: 'Tarfea de biologia',
         created_at: sixthHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -131,6 +144,7 @@ async function run() {
         title: 'Pesquisa de Geografia',
         created_at: seventhHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -139,6 +153,7 @@ async function run() {
         title: 'Pesquisa de Biologia',
         created_at: seventhHomeworkCreationDate,
         completed: false,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -147,6 +162,7 @@ async function run() {
         title: 'Pesquisa de Geografia',
         created_at: eighthHomeworkCreationDate,
         completed: true,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -162,6 +178,7 @@ async function run() {
         discipline: 'matemática',
         dueDate: firstHomeworkCreationDate,
         description: 'Prova de matemática vai cair algebra',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -172,6 +189,7 @@ async function run() {
         dueDate: secondHomeworkCreationDate,
         alertDate: secondHomeworkCreationDate,
         description: 'Seminário de geografia - tema: relevo',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
 
@@ -181,6 +199,7 @@ async function run() {
         discipline: 'história',
         dueDate: thirdHomeworkCreationDate,
         alertDate: thirdHomeworkCreationDate,
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
       }
     }),
   ])
@@ -193,6 +212,7 @@ async function run() {
         data: {
           title: 'Estudar matemática',
           description: 'Prova de matemática vai cair algebra',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
         }
       }),
 
@@ -200,12 +220,14 @@ async function run() {
         data: {
           title: 'Pesquisa de geografia',
           description: 'Sobre relevo',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
         }
       }),
 
       prisma.weekActivity.create({
         data: {
           title: 'Estudar história',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
         }
       }),
     ])
@@ -218,6 +240,7 @@ async function run() {
           data: {
             discipline: 'matemática',
             field: 'Matematica',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
           }
         }),
   
@@ -225,6 +248,7 @@ async function run() {
           data: {
             discipline: 'história',
             field: 'Humanas',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
           }
         }),
   
@@ -232,6 +256,7 @@ async function run() {
           data: {
             discipline: 'biologia',
             field: 'Naturezas',
+        student_id: '4cadad7a-39f9-492a-835f-c7d2f7d6ac1a'
           }
         }),
       ])

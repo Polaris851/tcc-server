@@ -16,6 +16,9 @@ model Homework {
   title      String
   created_at DateTime
   completed  Boolean
+  student_id String
+
+  student Student @relation(fields: [student_id], references: [id])
 
   @@map("homeworks")
 }
@@ -27,25 +30,31 @@ model Event {
   dueDate     DateTime
   alertDate   DateTime?
   description String?
+  student_id  String
+
+  student Student @relation(fields: [student_id], references: [id])
 
   @@map("events")
 }
 
 model WeekActivity {
-  id          String  @id @default(uuid())
-  title       String
-  description String?
-  time_week_activity   TimeWeekActivity[]
+  id                 String             @id @default(uuid())
+  title              String
+  description        String?
+  student_id         String
+  time_week_activity TimeWeekActivity[]
+
+  student Student @relation(fields: [student_id], references: [id])
 
   @@map("week_activities")
 }
 
 model TimeWeekActivity {
-  id                String  @id @default(uuid())
-  dayOfWeek         DayOfWeekEnum
-  startTime         DateTime @db.Time
-  endTime           DateTime @db.Time
-  week_activity_id  String
+  id               String        @id @default(uuid())
+  dayOfWeek        DayOfWeekEnum
+  startTime        DateTime      @db.Time
+  endTime          DateTime      @db.Time
+  week_activity_id String
 
   weekActivity WeekActivity @relation(fields: [week_activity_id], references: [id])
 
@@ -53,20 +62,23 @@ model TimeWeekActivity {
 }
 
 model Discipline {
-  id         String      @id @default(uuid())
-  discipline String
-  field      FieldEnum
-  time_discipline   TimeDiscipline[]
+  id              String           @id @default(uuid())
+  discipline      String
+  field           FieldEnum
+  student_id      String
+  time_discipline TimeDiscipline[]
+
+  student Student @relation(fields: [student_id], references: [id])
 
   @@map("disciplines")
 }
 
 model TimeDiscipline {
-  id              String  @id @default(uuid())
-  dayOfWeek       DayOfWeekEnum
-  startTime       DateTime @db.Time
-  endTime         DateTime @db.Time
-  discipline_id   String
+  id            String        @id @default(uuid())
+  dayOfWeek     DayOfWeekEnum
+  startTime     DateTime      @db.Time
+  endTime       DateTime      @db.Time
+  discipline_id String
 
   discipline Discipline @relation(fields: [discipline_id], references: [id])
 
@@ -74,11 +86,15 @@ model TimeDiscipline {
 }
 
 model Student {
-  id              String  @id @default(uuid())
-  name            String
-  course          CourseEnum
-  email           String  @unique
-  password        String
+  id           String         @id @default(uuid())
+  name         String
+  course       CourseEnum
+  email        String         @unique
+  password     String
+  Homework     Homework[]
+  Event        Event[]
+  WeekActivity WeekActivity[]
+  Discipline   Discipline[]
 
   @@map("students")
 }

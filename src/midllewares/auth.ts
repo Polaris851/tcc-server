@@ -11,7 +11,7 @@ export function AuthMiddlewares(req: FastifyRequest) {
     const { authorization } = req.headers
 
     if(!authorization) {
-        throw new Error("mensagem aqui")
+        throw new Error("Usuário não encontrado")
     }
 
     const [, token] = authorization.split(" ")
@@ -22,6 +22,6 @@ export function AuthMiddlewares(req: FastifyRequest) {
         req.userId = id
     } catch(error) {
         console.log(error)
-        throw new Error("mensagem aqui")
+        throw new Error("Token expirado")
     }
 }

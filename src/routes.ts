@@ -57,7 +57,7 @@ export async function appRoutes(app: FastifyInstance) {
             }
         }
 
-        const token = sign({id: user.id}, "teste", {expiresIn: "1d"})
+        const token = sign({id: user.id}, "teste", {expiresIn: "1y"})
 
         const { id, name, course } = user
         
@@ -77,6 +77,7 @@ export async function appRoutes(app: FastifyInstance) {
 
         await prisma.homework.create({
             data: {
+                student_id: request.userId!,
                 title,
                 created_at: today,
                 completed: false,
@@ -96,12 +97,13 @@ export async function appRoutes(app: FastifyInstance) {
                 startTime: z.string(),
                 endTime: z.string()
             }))
-        });
+        })
         
         const { title, description, weekActivityTimes } = createdActivityBody.parse(request.body)
         
         const weekActivitiyEntity = await prisma.weekActivity.create({
             data: {
+                student_id: request.userId!,
                 title,
                 description,
             },
@@ -131,23 +133,24 @@ export async function appRoutes(app: FastifyInstance) {
             dueDate: z.string(),
             alertDate: z.string().optional(),
             description: z.string().optional(),
-        });
+        })
 
-        const { title, discipline, dueDate, alertDate, description } = createdEventBody.parse(request.body);
+        const { title, discipline, dueDate, alertDate, description } = createdEventBody.parse(request.body)
 
         const parsedDueData = dayjs(dueDate).startOf("day").toDate()
         const parsedAlertData = alertDate ? dayjs(alertDate).startOf("day").toDate() : null
 
         await prisma.event.create({
             data: {
+                student_id: request.userId!,
                 title,
                 discipline,
                 dueDate: parsedDueData,
                 alertDate: parsedAlertData,
                 description,
             },
-        });
-    });
+        })
+    })
       
     const hoursAndMinutesToDate = (time: string) => {
         const [hours, minutes] = time.split(":")
@@ -173,12 +176,13 @@ export async function appRoutes(app: FastifyInstance) {
                 startTime: z.string(),
                 endTime: z.string()
             }))
-        });
+        })
 
         const { discipline, field, disciplineTimes } = createdDisciplineBody.parse(request.body)
 
         const disciplineEntity = await prisma.discipline.create({
             data: {
+                student_id: request.userId!,
                 discipline,
                 field,
             },
@@ -268,7 +272,7 @@ export async function appRoutes(app: FastifyInstance) {
             groupedByDay[dayKey].completed++
           }
           groupedByDay[dayKey].amount++
-        });
+        })
         
         return Object.values(groupedByDay)
     })
@@ -277,7 +281,7 @@ export async function appRoutes(app: FastifyInstance) {
     app.get("/events", async (request) => {
         AuthMiddlewares(request)
 
-        const currentMonth = dayjs().month() + 1;
+        const currentMonth = dayjs().month() + 1
 
         const eventsMonth = await prisma.event.findMany({
             where: {
@@ -298,6 +302,43 @@ export async function appRoutes(app: FastifyInstance) {
         })
 
         return eventsMonth
+    })
+
+    // get all events that will be shown in the notifications tab
+    app.get("/notifications", async (request) => {
+        AuthMiddlewares(request)
+
+        const now = new Date()
+        now.setHours(0)
+        now.setSeconds(0)
+        now.setMinutes(0)
+        now.setMilliseconds(0)
+
+        const events = await prisma.event.findMany({
+            where: {
+                OR: [
+                    {
+                        dueDate: now
+                    },
+                    {
+                        dueDate: {
+                            gt: now
+                        },
+                        alertDate: {
+                            lte: now
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                title: true,
+                discipline:true,
+                dueDate:true
+            }
+        })
+
+        return events
     })
 
     app.get("/week", async (request) => {
@@ -327,7 +368,7 @@ export async function appRoutes(app: FastifyInstance) {
         })
 
         const weekActivity = weekActivities.map((activity: any) => {
-            const matchingTimes = weekActivitiesTimes.filter((time: any) => time.week_activity_id === activity.id);
+            const matchingTimes = weekActivitiesTimes.filter((time: any) => time.week_activity_id === activity.id)
             return {
               id: activity.id,
               title: activity.title,
@@ -336,8 +377,8 @@ export async function appRoutes(app: FastifyInstance) {
                 startTime: time.startTime,
                 endTime: time.endTime,
               })),
-            };
-          });
+            }
+          })
 
         const disciplines = await prisma.discipline.findMany({
             select: {
@@ -364,7 +405,7 @@ export async function appRoutes(app: FastifyInstance) {
         })
 
         const discipline = disciplines.map((discipline: any) => {
-            const matchingTimes = disciplinesTimes.filter((time: any) => time.discipline_id === discipline.id);
+            const matchingTimes = disciplinesTimes.filter((time: any) => time.discipline_id === discipline.id)
             return {
               id: discipline.id,
               discipline: discipline.discipline,
@@ -373,8 +414,8 @@ export async function appRoutes(app: FastifyInstance) {
                 startTime: time.startTime,
                 endTime: time.endTime,
               })),
-            };
-          });
+            }
+          })
 
         
         return { weekActivity, discipline}
@@ -431,22 +472,6 @@ export async function appRoutes(app: FastifyInstance) {
                 }
             })
         }
-    })
-
-    app.delete("/homeworks/:id", async (request) => {
-        AuthMiddlewares(request)
-
-        const deleteHomeworkParams = z.object({
-            id: z.string().uuid(),
-        })
-
-        const { id } = deleteHomeworkParams.parse(request.params)
-
-        await prisma.homework.delete({
-            where: {
-                id: id
-            }
-        })
     })
 
     app.delete("/monthlyevents/:id", async (request) => {
