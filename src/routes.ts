@@ -440,11 +440,10 @@ export async function appRoutes(app: FastifyInstance) {
 
     app.patch("/homeworks/:id/toggle", async (request) => {
         AuthMiddlewares(request)
-
         const toggleHomeworkParams = z.object({
             id: z.string().uuid(),
         })
-
+        
         const { id } =toggleHomeworkParams.parse(request.params)
 
         let dayHomework = await prisma.homework.findFirst({
