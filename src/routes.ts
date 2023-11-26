@@ -129,13 +129,13 @@ export async function appRoutes(app: FastifyInstance) {
 
         const createdEventBody = z.object({
             title: z.enum(["Prova", "Seminario", "Trabalho", "Tarefa"]),
-            discipline: z.string(),
+            discipline_id: z.string(),
             dueDate: z.string(),
             alertDate: z.string().optional(),
             description: z.string().optional(),
         })
 
-        const { title, discipline, dueDate, alertDate, description } = createdEventBody.parse(request.body)
+        const { title, discipline_id, dueDate, alertDate, description } = createdEventBody.parse(request.body)
 
         const parsedDueData = dayjs(dueDate).startOf("day").toDate()
         const parsedAlertData = alertDate ? dayjs(alertDate).startOf("day").toDate() : null
@@ -144,7 +144,7 @@ export async function appRoutes(app: FastifyInstance) {
             data: {
                 student_id: request.userId!,
                 title,
-                discipline,
+                discipline_id,
                 dueDate: parsedDueData,
                 alertDate: parsedAlertData,
                 description,
@@ -296,12 +296,35 @@ export async function appRoutes(app: FastifyInstance) {
             select: {
                 id: true,
                 title: true,
-                discipline: true,
+                discipline_id: true,
                 dueDate: true,
             },
         })
 
-        return eventsMonth
+        const disciplineIds = eventsMonth.map((event) => event.discipline_id)
+
+        const disciplineTitles = await prisma.discipline.findMany({
+            where: {
+                id: {
+                in: disciplineIds,
+                },
+            },
+            select: {
+                id: true,
+                discipline: true,
+            },
+        })
+
+        // Mapping discipline titles to their respective events
+        const eventsWithTitles = eventsMonth.map((event) => {
+        const title = disciplineTitles.find((discipline) => discipline.id === event.discipline_id)?.discipline
+            return {
+                ...event,
+                disciplineTitle: title,
+            }
+        })
+
+        return { eventsMonth: eventsWithTitles }
     })
 
     // get all events that will be shown in the notifications tab
@@ -435,7 +458,23 @@ export async function appRoutes(app: FastifyInstance) {
             distinct: ['discipline']
         })
 
-        return  disciplines
+        return disciplines
+    })
+
+    app.get("/discipline/:id", async (request) => {
+        AuthMiddlewares(request)
+
+        const getMonthlyEventsParams = z.object({
+            id: z.string().uuid(),
+        })
+        
+        const { id } = getMonthlyEventsParams.parse(request.params)
+
+        await prisma.event.findUnique({
+            where: {
+                id: id
+            }
+        })
     })
 
     app.patch("/homeworks/:id/toggle", async (request) => {

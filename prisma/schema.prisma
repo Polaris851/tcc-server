@@ -26,13 +26,14 @@ model Homework {
 model Event {
   id          String    @id @default(uuid())
   title       TitleEnum
-  discipline  String
   dueDate     DateTime
   alertDate   DateTime?
   description String?
+  discipline_id  String
   student_id  String
 
   student Student @relation(fields: [student_id], references: [id])
+  discipline Discipline @relation(fields: [discipline_id], references: [id])
 
   @@map("events")
 }
@@ -66,6 +67,7 @@ model Discipline {
   discipline      String
   field           FieldEnum
   student_id      String
+  event           Event[]
   time_discipline TimeDiscipline[]
 
   student Student @relation(fields: [student_id], references: [id])
